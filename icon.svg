@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="128" height="128" viewBox="0 0 128 128" xmlns="http://www.w3.org/2000/svg">
+  <rect width="128" height="128" rx="14" fill="#1e1e1e"/>
+  
+  <!-- Browser Window Frame -->
+  <rect x="18" y="18" width="92" height="72" rx="4" fill="#2d2d2d" stroke="#4a4a4a" stroke-width="2"/>
+  
+  <!-- Browser Top Bar -->
+  <rect x="18" y="18" width="92" height="12" rx="4" fill="#3d3d3d"/>
+  
+  <!-- Browser Controls -->
+  <circle cx="25" cy="24" r="3" fill="#ff5f57"/>
+  <circle cx="35" cy="24" r="3" fill="#febc2e"/>
+  <circle cx="45" cy="24" r="3" fill="#28c840"/>
+  
+  <!-- Console Logs -->
+  <rect x="24" y="38" width="80" height="6" rx="2" fill="#4285f4"/>
+  <rect x="24" y="48" width="70" height="6" rx="2" fill="#ea4335"/>
+  <rect x="24" y="58" width="75" height="6" rx="2" fill="#fbbc05"/>
+  <rect x="24" y="68" width="65" height="6" rx="2" fill="#34a853"/>
+  
+  <!-- Magnifying Glass for Analysis -->
+  <circle cx="80" cy="90" r="16" fill="none" stroke="#5f9eff" stroke-width="4"/>
+  <line x1="92" y1="102" x2="102" y2="112" stroke="#5f9eff" stroke-width="6" stroke-linecap="round"/>
+  
+  <!-- Cursor Text -->
+  <text x="64" y="116" font-family="Arial, sans-serif" font-size="10" font-weight="bold" text-anchor="middle" fill="#ffffff">Cursor Browser Logs</text>
+</svg> 

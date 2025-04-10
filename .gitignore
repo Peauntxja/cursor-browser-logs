@@ -1,0 +1,13 @@
+.vscode/**
+.vscode-test/**
+out/**
+node_modules/**
+*.vsix
+.DS_Store
+.vsix-temp/**
+dist/**
+extension/**
+out/**
+temp/**
+vsce_pkg/**
+our_pkg/** 
