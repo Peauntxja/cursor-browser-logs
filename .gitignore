@@ -11,3 +11,5 @@ out/**
 temp/**
 vsce_pkg/**
 our_pkg/** 
+*.specstory/
+extension-fixed/
