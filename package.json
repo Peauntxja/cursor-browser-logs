@@ -2,7 +2,7 @@
   "name": "cursor-browser-logs",
   "displayName": "Cursor Browser Logs Analyzer",
   "description": "在Cursor中集成浏览器日志分析工具",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "publisher": "MIZUKI",
   "icon": "icon.png",
   "author": {
@@ -29,11 +29,20 @@
   ],
   "activationEvents": [
     "onCommand:cursor-browser-logs.showLogs",
-    "onCommand:cursor-browser-logs.analyzeLogs"
+    "onCommand:cursor-browser-logs.analyzeLogs",
+    "onCommand:cursor-browser-logs.configure"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
+      {
+        "command": "cursor-browser-logs.configure",
+        "title": "Cursor Browser Logs: 配置浏览器连接"
+      },
+      {
+        "command": "cursor-browser-logs.clearConfig",
+        "title": "Cursor Browser Logs: 清除配置"
+      },
       {
         "command": "cursor-browser-logs.showLogs",
         "title": "Cursor Browser Logs: 查看浏览器日志"
@@ -75,6 +84,11 @@
     "menus": {
       "view/title": [
         {
+          "command": "cursor-browser-logs.configure",
+          "when": "view == browserLogs",
+          "group": "configuration"
+        },
+        {
           "command": "cursor-browser-logs.showLogs",
           "when": "view == browserLogs",
           "group": "navigation"
@@ -100,6 +114,28 @@
     "configuration": {
       "title": "Cursor Browser Logs",
       "properties": {
+        "cursorBrowserLogs.browserType": {
+          "type": "string",
+          "enum": [
+            "chrome",
+            "firefox",
+            "edge",
+            "safari",
+            "other"
+          ],
+          "default": "chrome",
+          "description": "要连接的浏览器类型"
+        },
+        "cursorBrowserLogs.targetUrl": {
+          "type": "string",
+          "default": "",
+          "description": "要监控的目标网页URL"
+        },
+        "cursorBrowserLogs.debugPort": {
+          "type": "number",
+          "default": 0,
+          "description": "浏览器调试端口（0表示使用默认端口）"
+        },
         "cursorBrowserLogs.apiServer": {
           "type": "string",
           "default": "http://localhost:3001",
@@ -130,6 +166,7 @@
     "@types/glob": "^7.1.3",
     "@types/mocha": "^8.2.2",
     "@types/node": "^14.14.35",
+    "@types/node-fetch": "^2.6.4",
     "@types/vscode": "^1.60.0",
     "@typescript-eslint/eslint-plugin": "^4.19.0",
     "@typescript-eslint/parser": "^4.19.0",
@@ -140,7 +177,11 @@
     "vscode-test": "^1.5.2"
   },
   "dependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.1",
     "axios": "^0.21.1",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "node-fetch": "^2.6.1"
   }
 }
