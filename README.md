@@ -44,11 +44,11 @@ MIZUKI
 
 ```bash
 # VSCode命令行安装方式（可选）
-code --install-extension cursor-browser-logs-0.0.2.vsix
+code --install-extension cursor-browser-logs-0.0.3.vsix
 
 # Cursor命令行安装方式（可选）
-/Applications/Cursor.app/Contents/Resources/app/bin/code --install-extension cursor-browser-logs-0.0.2.vsix  # macOS
-C:\Program Files\Cursor\resources\app\bin\code.cmd --install-extension cursor-browser-logs-0.0.2.vsix  # Windows
+/Applications/Cursor.app/Contents/Resources/app/bin/code --install-extension cursor-browser-logs-0.0.3.vsix  # macOS
+C:\Program Files\Cursor\resources\app\bin\code.cmd --install-extension cursor-browser-logs-0.0.3.vsix  # Windows
 ```
 
 ## 使用方法
@@ -128,7 +128,8 @@ firefox -start-debugger-server 6000
   "cursorBrowserLogs.targetUrl": "",               // 要监控的目标网页URL
   "cursorBrowserLogs.debugPort": 0,                // 浏览器调试端口（0表示使用默认端口）
   "cursorBrowserLogs.apiServer": "http://localhost:3001", // 浏览器日志API服务器地址
-  "cursorBrowserLogs.refreshInterval": 10000       // 自动刷新日志的间隔时间（毫秒）
+  "cursorBrowserLogs.refreshInterval": 10000,      // 自动刷新日志的间隔时间（毫秒），最低1000
+  "cursorBrowserLogs.maxLogs": 5000                // 日志缓存上限条数，超过后自动丢弃最旧日志
 }
 ```
 
