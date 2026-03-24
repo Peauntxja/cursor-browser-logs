@@ -1,67 +1,41 @@
 import * as vscode from 'vscode';
-import fetch from 'node-fetch';
+import fetch, { Response } from 'node-fetch';
+import { LogEntry, AnalysisResult } from './types';
 
-/**
- * API客户端，用于与浏览器日志API服务器通信
- */
+const REQUEST_TIMEOUT_MS = 10_000;
+
 export class ApiClient {
     private apiUrl: string;
 
     constructor() {
-        // 从配置中获取API服务器地址
         const config = vscode.workspace.getConfiguration('cursorBrowserLogs');
         this.apiUrl = config.get<string>('apiServer', 'http://localhost:3001');
     }
 
-    /**
-     * 获取所有日志
-     */
-    async getLogs(): Promise<any[]> {
+    async getLogs(): Promise<LogEntry[]> {
         try {
-            const response = await fetch(`${this.apiUrl}/api/logs`);
-            const data = await response.json() as any;
-            
-            if (data.success && Array.isArray(data.logs)) {
-                return data.logs;
-            }
-            return [];
+            const data = await this.fetchJson<{ success: boolean; logs: LogEntry[] }>(`${this.apiUrl}/api/logs`);
+            return data?.success && Array.isArray(data.logs) ? data.logs : [];
         } catch (error) {
             console.error('获取日志失败:', error);
-            vscode.window.showErrorMessage(`获取日志失败: ${(error as Error).message}`);
             return [];
         }
     }
 
-    /**
-     * 获取分析结果
-     */
-    async getAnalysis(): Promise<any | null> {
+    async getAnalysis(): Promise<AnalysisResult | null> {
         try {
-            const response = await fetch(`${this.apiUrl}/api/analysis`);
-            const data = await response.json() as any;
-            
-            if (data.success && data.analysis) {
-                return data.analysis;
-            }
-            return null;
+            const data = await this.fetchJson<{ success: boolean; analysis: AnalysisResult | null }>(`${this.apiUrl}/api/analysis`);
+            return data?.success ? data.analysis ?? null : null;
         } catch (error) {
             console.error('获取分析结果失败:', error);
-            vscode.window.showErrorMessage(`获取分析结果失败: ${(error as Error).message}`);
             return null;
         }
     }
 
-    /**
-     * 清除日志
-     */
     async clearLogs(): Promise<boolean> {
         try {
-            const response = await fetch(`${this.apiUrl}/api/logs`, {
-                method: 'DELETE'
-            });
-            const data = await response.json() as any;
-            
-            return data.success === true;
+            const data = await this.fetchJson<{ success: boolean }>(`${this.apiUrl}/api/logs`, { method: 'DELETE' });
+            return data?.success === true;
         } catch (error) {
             console.error('清除日志失败:', error);
             vscode.window.showErrorMessage(`清除日志失败: ${(error as Error).message}`);
@@ -69,16 +43,27 @@ export class ApiClient {
         }
     }
 
-    /**
-     * 设置API服务器地址
-     */
-    setApiUrl(url: string) {
-        if (url && url.trim() !== '') {
-            this.apiUrl = url;
-            
-            // 更新配置
-            const config = vscode.workspace.getConfiguration('cursorBrowserLogs');
-            config.update('apiServer', url, vscode.ConfigurationTarget.Global);
+    setApiUrl(url: string): void {
+        if (!url?.trim()) {
+            return;
+        }
+        this.apiUrl = url;
+        const config = vscode.workspace.getConfiguration('cursorBrowserLogs');
+        config.update('apiServer', url, vscode.ConfigurationTarget.Global);
+    }
+
+    private async fetchJson<T>(url: string, init?: { method?: string }): Promise<T | null> {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+        try {
+            const response: Response = await fetch(url, {
+                ...init,
+                signal: controller.signal as any,
+            });
+            return (await response.json()) as T;
+        } finally {
+            clearTimeout(timer);
         }
     }
-} 
+}

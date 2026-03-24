@@ -1,9 +1,21 @@
 import * as vscode from 'vscode';
 import { ApiClient } from './apiClient';
+import { LogEntry } from './types';
 
-/**
- * 日志条目类，用于树视图显示
- */
+const LOG_LEVEL_PREFIX: Record<string, string> = {
+    error: '错误',
+    warn: '警告',
+    info: '信息',
+    debug: '调试',
+};
+
+const LOG_LEVEL_ICON: Record<string, string> = {
+    error: 'error',
+    warn: 'warning',
+    info: 'info',
+    debug: 'debug',
+};
+
 export class LogItem extends vscode.TreeItem {
     constructor(
         public readonly label: string,
@@ -13,123 +25,120 @@ export class LogItem extends vscode.TreeItem {
         public readonly collapsibleState: vscode.TreeItemCollapsibleState
     ) {
         super(label, collapsibleState);
-        
-        // 设置工具提示
         this.tooltip = message;
-        
-        // 设置描述
         this.description = new Date(timestamp).toLocaleString();
-        
-        // 设置图标
-        switch (level) {
-            case 'error':
-                this.iconPath = new vscode.ThemeIcon('error');
-                break;
-            case 'warn':
-                this.iconPath = new vscode.ThemeIcon('warning');
-                break;
-            case 'info':
-                this.iconPath = new vscode.ThemeIcon('info');
-                break;
-            case 'debug':
-                this.iconPath = new vscode.ThemeIcon('debug');
-                break;
-            default:
-                this.iconPath = new vscode.ThemeIcon('circle-outline');
-        }
-        
-        // 设置上下文值，用于条件显示菜单项
+        this.iconPath = new vscode.ThemeIcon(LOG_LEVEL_ICON[level] ?? 'circle-outline');
         this.contextValue = 'logItem';
     }
 }
 
-/**
- * 日志提供者类，用于在VS Code中显示日志
- */
-export class LogsProvider implements vscode.TreeDataProvider<LogItem> {
-    private _onDidChangeTreeData: vscode.EventEmitter<LogItem | undefined | null | void> = new vscode.EventEmitter<LogItem | undefined | null | void>();
-    readonly onDidChangeTreeData: vscode.Event<LogItem | undefined | null | void> = this._onDidChangeTreeData.event;
-    
-    private logs: any[] = [];
-    
+export class LogGroupItem extends vscode.TreeItem {
+    constructor(
+        public readonly label: string,
+        public readonly level: string,
+        public readonly count: number,
+        public readonly logs: LogEntry[]
+    ) {
+        super(label, vscode.TreeItemCollapsibleState.Collapsed);
+        this.iconPath = new vscode.ThemeIcon(LOG_LEVEL_ICON[level] ?? 'circle-outline');
+        this.description = `${count} 条`;
+        this.contextValue = 'logGroup';
+    }
+}
+
+export class LogsProvider implements vscode.TreeDataProvider<LogItem | LogGroupItem> {
+    private _onDidChangeTreeData = new vscode.EventEmitter<LogItem | LogGroupItem | undefined | null | void>();
+    readonly onDidChangeTreeData = this._onDidChangeTreeData.event;
+
+    private logs: LogEntry[] = [];
+    private grouped = true;
+
     constructor(private apiClient: ApiClient) {
-        // 初始化时加载日志
         this.refresh();
     }
-    
-    refresh(): void {
-        // 触发视图更新
+
+    async refresh(): Promise<void> {
+        this.logs = await this.apiClient.getLogs();
         this._onDidChangeTreeData.fire();
-        
-        // 从API服务器获取最新日志
-        this.apiClient.getLogs().then(logs => {
-            this.logs = logs;
-        });
     }
-    
-    getTreeItem(element: LogItem): vscode.TreeItem {
+
+    setGrouped(grouped: boolean): void {
+        this.grouped = grouped;
+        this._onDidChangeTreeData.fire();
+    }
+
+    getTreeItem(element: LogItem | LogGroupItem): vscode.TreeItem {
         return element;
     }
-    
-    async getChildren(element?: LogItem): Promise<LogItem[]> {
-        if (element) {
-            // 子节点处理逻辑（如果需要）
+
+    getChildren(element?: LogItem | LogGroupItem): (LogItem | LogGroupItem)[] {
+        if (element instanceof LogGroupItem) {
+            return this.buildLogItems(element.logs);
+        }
+
+        if (element instanceof LogItem) {
             return [];
-        } else {
-            // 根节点，显示所有日志
-            if (this.logs.length === 0) {
-                // 如果没有日志，再次尝试从服务器获取
-                this.logs = await this.apiClient.getLogs();
+        }
+
+        if (this.logs.length === 0) {
+            return [];
+        }
+
+        const sorted = [...this.logs].sort((a, b) => b.timestamp - a.timestamp);
+
+        if (this.grouped) {
+            return this.buildGroupItems(sorted);
+        }
+
+        return this.buildLogItems(sorted);
+    }
+
+    private buildGroupItems(logs: LogEntry[]): LogGroupItem[] {
+        const groups: Record<string, LogEntry[]> = {};
+        const order = ['error', 'warn', 'info', 'debug'];
+
+        for (const log of logs) {
+            const key = log.level;
+            if (!groups[key]) {
+                groups[key] = [];
             }
-            
-            if (this.logs.length === 0) {
-                vscode.window.showInformationMessage('没有浏览器日志数据');
-                return [];
-            }
-            
-            // 对日志进行排序：按时间戳降序排列
-            const sortedLogs = [...this.logs].sort((a, b) => b.timestamp - a.timestamp);
-            
-            // 转换为树视图项
-            return sortedLogs.map((log, index) => {
-                // 创建标签
-                let label: string;
-                
-                // 根据日志级别设置不同的前缀
-                switch (log.level) {
-                    case 'error':
-                        label = `错误: ${this.truncateMessage(log.message)}`;
-                        break;
-                    case 'warn':
-                        label = `警告: ${this.truncateMessage(log.message)}`;
-                        break;
-                    case 'info':
-                        label = `信息: ${this.truncateMessage(log.message)}`;
-                        break;
-                    case 'debug':
-                        label = `调试: ${this.truncateMessage(log.message)}`;
-                        break;
-                    default:
-                        label = this.truncateMessage(log.message);
-                }
-                
-                return new LogItem(
-                    label,
-                    log.level,
-                    log.message,
-                    log.timestamp,
-                    vscode.TreeItemCollapsibleState.None
+            groups[key].push(log);
+        }
+
+        return order
+            .filter(level => groups[level]?.length)
+            .map(level => {
+                const prefix = LOG_LEVEL_PREFIX[level] ?? level;
+                return new LogGroupItem(
+                    `${prefix} (${groups[level].length})`,
+                    level,
+                    groups[level].length,
+                    groups[level]
                 );
             });
-        }
     }
-    
-    /**
-     * 截断消息文本，防止过长
-     */
+
+    private buildLogItems(logs: LogEntry[]): LogItem[] {
+        return logs.map(log => {
+            const prefix = LOG_LEVEL_PREFIX[log.level] ?? '';
+            const label = prefix
+                ? `${prefix}: ${this.truncateMessage(log.message)}`
+                : this.truncateMessage(log.message);
+
+            return new LogItem(
+                label,
+                log.level,
+                log.message,
+                log.timestamp,
+                vscode.TreeItemCollapsibleState.None
+            );
+        });
+    }
+
     private truncateMessage(message: string, maxLength: number = 80): string {
-        if (!message) return '';
-        if (message.length <= maxLength) return message;
-        return message.substring(0, maxLength) + '...';
+        if (!message) {
+            return '';
+        }
+        return message.length <= maxLength ? message : message.substring(0, maxLength) + '...';
     }
-} 
+}
