@@ -13,7 +13,7 @@ const vsixPath = path.join(baseDir, 'cursor-browser-logs-MIZUKI.vsix');
 const manifestContent = `<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
   <Metadata>
-    <Identity Language="en-US" Id="cursor-browser-logs" Version="0.0.1" Publisher="CursorBrowserLogs" />
+    <Identity Language="en-US" Id="cursor-browser-logs" Version="0.0.2" Publisher="CursorBrowserLogs" />
     <DisplayName>Cursor Browser Logs Analyzer</DisplayName>
     <Description xml:space="preserve">在Cursor中集成浏览器日志分析工具</Description>
     <Tags>cursor,browser,logs,analyzer,debug</Tags>

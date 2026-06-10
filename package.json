@@ -2,7 +2,7 @@
   "name": "cursor-browser-logs",
   "displayName": "Cursor Browser Logs Analyzer",
   "description": "在Cursor中集成浏览器日志分析工具",
-  "version": "0.0.1",
+  "version": "0.0.3",
   "publisher": "MIZUKI",
   "icon": "icon.png",
   "author": {
@@ -22,33 +22,45 @@
     "debug"
   ],
   "engines": {
-    "vscode": "^1.60.0"
+    "vscode": "^1.74.0"
   },
   "categories": [
     "Other"
   ],
   "activationEvents": [
-    "onCommand:cursor-browser-logs.showLogs",
-    "onCommand:cursor-browser-logs.analyzeLogs"
+    "onStartupFinished"
   ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
+        "command": "cursor-browser-logs.configure",
+        "title": "Cursor Browser Logs: 配置浏览器连接",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "cursor-browser-logs.clearConfig",
+        "title": "Cursor Browser Logs: 清除配置"
+      },
+      {
         "command": "cursor-browser-logs.showLogs",
-        "title": "Cursor Browser Logs: 查看浏览器日志"
+        "title": "Cursor Browser Logs: 刷新浏览器日志",
+        "icon": "$(refresh)"
       },
       {
         "command": "cursor-browser-logs.analyzeLogs",
-        "title": "Cursor Browser Logs: 分析浏览器日志"
+        "title": "Cursor Browser Logs: 分析浏览器日志",
+        "icon": "$(search)"
       },
       {
         "command": "cursor-browser-logs.clearLogs",
-        "title": "Cursor Browser Logs: 清除日志"
+        "title": "Cursor Browser Logs: 清除日志",
+        "icon": "$(clear-all)"
       },
       {
         "command": "cursor-browser-logs.generateFix",
-        "title": "Cursor Browser Logs: 生成修复建议"
+        "title": "Cursor Browser Logs: 生成修复建议",
+        "icon": "$(lightbulb)"
       }
     ],
     "viewsContainers": {
@@ -56,7 +68,7 @@
         {
           "id": "browser-logs-explorer",
           "title": "Browser Logs",
-          "icon": "resources/browser-logs.svg"
+          "icon": "browser-logs.svg"
         }
       ]
     },
@@ -72,22 +84,37 @@
         }
       ]
     },
+    "viewsWelcome": [
+      {
+        "view": "browserLogs",
+        "contents": "尚未连接到浏览器，或暂无日志数据。\n[配置浏览器连接](command:cursor-browser-logs.configure)\n[刷新日志](command:cursor-browser-logs.showLogs)"
+      },
+      {
+        "view": "logAnalysis",
+        "contents": "暂无分析结果。\n[开始分析日志](command:cursor-browser-logs.analyzeLogs)"
+      }
+    ],
     "menus": {
       "view/title": [
         {
-          "command": "cursor-browser-logs.showLogs",
+          "command": "cursor-browser-logs.configure",
           "when": "view == browserLogs",
-          "group": "navigation"
+          "group": "navigation@4"
         },
         {
-          "command": "cursor-browser-logs.analyzeLogs",
-          "when": "view == logAnalysis",
-          "group": "navigation"
+          "command": "cursor-browser-logs.showLogs",
+          "when": "view == browserLogs",
+          "group": "navigation@1"
         },
         {
           "command": "cursor-browser-logs.clearLogs",
           "when": "view == browserLogs",
-          "group": "navigation"
+          "group": "navigation@2"
+        },
+        {
+          "command": "cursor-browser-logs.analyzeLogs",
+          "when": "view == logAnalysis",
+          "group": "navigation@1"
         }
       ],
       "editor/context": [
@@ -100,6 +127,28 @@
     "configuration": {
       "title": "Cursor Browser Logs",
       "properties": {
+        "cursorBrowserLogs.browserType": {
+          "type": "string",
+          "enum": [
+            "chrome",
+            "firefox",
+            "edge",
+            "safari",
+            "other"
+          ],
+          "default": "chrome",
+          "description": "要连接的浏览器类型"
+        },
+        "cursorBrowserLogs.targetUrl": {
+          "type": "string",
+          "default": "",
+          "description": "要监控的目标网页URL"
+        },
+        "cursorBrowserLogs.debugPort": {
+          "type": "number",
+          "default": 0,
+          "description": "浏览器调试端口（0表示使用默认端口）"
+        },
         "cursorBrowserLogs.apiServer": {
           "type": "string",
           "default": "http://localhost:3001",
@@ -108,7 +157,14 @@
         "cursorBrowserLogs.refreshInterval": {
           "type": "number",
           "default": 10000,
-          "description": "自动刷新日志的间隔时间（毫秒）"
+          "minimum": 1000,
+          "description": "自动刷新日志的间隔时间（毫秒），最低 1000"
+        },
+        "cursorBrowserLogs.maxLogs": {
+          "type": "number",
+          "default": 5000,
+          "minimum": 100,
+          "description": "日志缓存上限条数，超过后自动丢弃最旧的日志"
         }
       }
     }
@@ -120,19 +176,23 @@
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src --ext ts",
     "test": "node ./out/test/runTest.js",
-    "prepare-package": "rm -rf .vsix-temp && mkdir -p .vsix-temp/extension && cp -r out/* .vsix-temp/extension/ && cp -r resources/* .vsix-temp/extension/ && cp package.json .vsix-temp/extension/ && cp icon.png .vsix-temp/extension/ && cp LICENSE .vsix-temp/extension/ && cp README.md .vsix-temp/extension/",
-    "create-manifest": "echo '<?xml version=\"1.0\" encoding=\"utf-8\"?><PackageManifest Version=\"2.0.0\" xmlns=\"http://schemas.microsoft.com/developer/vsx-schema/2011\" xmlns:d=\"http://schemas.microsoft.com/developer/vsx-schema-design/2011\"><Metadata><Identity Language=\"en-US\" Id=\"cursor-browser-logs\" Version=\"0.0.1\" Publisher=\"MIZUKI\" /><DisplayName>Cursor Browser Logs Analyzer</DisplayName><Description xml:space=\"preserve\">在Cursor中集成浏览器日志分析工具</Description><Tags>cursor,browser,logs,analyzer,debug</Tags><Categories>Other</Categories><Icon>extension/icon.png</Icon></Metadata><Installation><InstallationTarget Id=\"Microsoft.VisualStudio.Code\"/></Installation><Dependencies/><Assets><Asset Type=\"Microsoft.VisualStudio.Code.Manifest\" Path=\"extension/package.json\" Addressable=\"true\" /><Asset Type=\"Microsoft.VisualStudio.Services.Content.Details\" Path=\"extension/README.md\" Addressable=\"true\" /><Asset Type=\"Microsoft.VisualStudio.Services.Content.License\" Path=\"extension/LICENSE\" Addressable=\"true\" /><Asset Type=\"Microsoft.VisualStudio.Services.Icons.Default\" Path=\"extension/icon.png\" Addressable=\"true\" /></Assets></PackageManifest>' > .vsix-temp/extension.vsixmanifest",
+    "prepare-package": "rm -rf .vsix-temp && mkdir -p .vsix-temp/extension && cp -r out/* .vsix-temp/extension/ && cp -r resources/* .vsix-temp/extension/ && cp browser-logs.svg .vsix-temp/extension/ && cp package.json .vsix-temp/extension/ && cp icon.png .vsix-temp/extension/ && cp LICENSE .vsix-temp/extension/ && cp README.md .vsix-temp/extension/",
+    "create-manifest": "echo '<?xml version=\"1.0\" encoding=\"utf-8\"?><PackageManifest Version=\"2.0.0\" xmlns=\"http://schemas.microsoft.com/developer/vsx-schema/2011\" xmlns:d=\"http://schemas.microsoft.com/developer/vsx-schema-design/2011\"><Metadata><Identity Language=\"en-US\" Id=\"cursor-browser-logs\" Version=\"0.0.3\" Publisher=\"MIZUKI\" /><DisplayName>Cursor Browser Logs Analyzer</DisplayName><Description xml:space=\"preserve\">在Cursor中集成浏览器日志分析工具</Description><Tags>cursor,browser,logs,analyzer,debug</Tags><Categories>Other</Categories><Icon>extension/icon.png</Icon></Metadata><Installation><InstallationTarget Id=\"Microsoft.VisualStudio.Code\"/></Installation><Dependencies/><Assets><Asset Type=\"Microsoft.VisualStudio.Code.Manifest\" Path=\"extension/package.json\" Addressable=\"true\" /><Asset Type=\"Microsoft.VisualStudio.Services.Content.Details\" Path=\"extension/README.md\" Addressable=\"true\" /><Asset Type=\"Microsoft.VisualStudio.Services.Content.License\" Path=\"extension/LICENSE\" Addressable=\"true\" /><Asset Type=\"Microsoft.VisualStudio.Services.Icons.Default\" Path=\"extension/icon.png\" Addressable=\"true\" /></Assets></PackageManifest>' > .vsix-temp/extension.vsixmanifest",
     "zip-package": "cd .vsix-temp && rm -f ../cursor-browser-logs-MIZUKI.vsix && zip -r ../cursor-browser-logs-MIZUKI.vsix extension.vsixmanifest extension/",
     "cleanup": "rm -rf .vsix-temp",
     "package": "npm run prepare-package && npm run create-manifest && npm run zip-package && npm run cleanup"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.1",
     "@types/glob": "^7.1.3",
     "@types/mocha": "^8.2.2",
     "@types/node": "^14.14.35",
+    "@types/node-fetch": "^2.6.4",
     "@types/vscode": "^1.60.0",
     "@typescript-eslint/eslint-plugin": "^4.19.0",
     "@typescript-eslint/parser": "^4.19.0",
+    "@vscode/vsce": "^3.7.1",
     "eslint": "^7.22.0",
     "glob": "^7.1.6",
     "mocha": "^8.3.2",
@@ -140,7 +200,8 @@
     "vscode-test": "^1.5.2"
   },
   "dependencies": {
-    "axios": "^0.21.1",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "node-fetch": "^2.6.1"
   }
 }

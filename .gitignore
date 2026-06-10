@@ -13,3 +13,4 @@ vsce_pkg/**
 our_pkg/** 
 *.specstory/
 extension-fixed/
+.cursor/
