@@ -57,14 +57,9 @@ export class LogsProvider implements vscode.TreeDataProvider<LogItem> {
         this.refresh();
     }
     
-    refresh(): void {
-        // 触发视图更新
+    async refresh(): Promise<void> {
+        this.logs = await this.apiClient.getLogs();
         this._onDidChangeTreeData.fire();
-        
-        // 从API服务器获取最新日志
-        this.apiClient.getLogs().then(logs => {
-            this.logs = logs;
-        });
     }
     
     getTreeItem(element: LogItem): vscode.TreeItem {
@@ -83,7 +78,6 @@ export class LogsProvider implements vscode.TreeDataProvider<LogItem> {
             }
             
             if (this.logs.length === 0) {
-                vscode.window.showInformationMessage('没有浏览器日志数据');
                 return [];
             }
             

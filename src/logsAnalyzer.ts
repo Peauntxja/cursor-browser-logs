@@ -22,6 +22,14 @@ export class LogsAnalyzer {
     private analysisCache: any = null;
     
     constructor(private apiClient: ApiClient) {}
+
+    getAnalysis(): any {
+        return this.analysisCache;
+    }
+
+    clearAnalysis(): void {
+        this.analysisCache = null;
+    }
     
     /**
      * 分析浏览器日志

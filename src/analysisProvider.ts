@@ -1,5 +1,5 @@
 import * as vscode from 'vscode';
-import { ApiClient } from './apiClient';
+import { LogsAnalyzer } from './logsAnalyzer';
 
 /**
  * 分析条目类，用于树视图显示
@@ -38,17 +38,7 @@ export class AnalysisItem extends vscode.TreeItem {
                 this.iconPath = new vscode.ThemeIcon('circle-outline');
         }
         
-        // 设置上下文值，用于条件显示菜单项
         this.contextValue = 'analysisItem';
-        
-        // 如果是建议，添加命令
-        if (type === 'suggestion') {
-            this.command = {
-                title: '应用建议',
-                command: 'cursor-browser-logs.applySuggestion',
-                arguments: [value]
-            };
-        }
     }
 }
 
@@ -62,25 +52,15 @@ export class AnalysisProvider implements vscode.TreeDataProvider<AnalysisItem> {
     private analysis: any = null;
     private rootItems: AnalysisItem[] = [];
     
-    constructor(private apiClient: ApiClient) {
-        // 初始化时加载分析结果
+    constructor(private logsAnalyzer: LogsAnalyzer) {
         this.refresh();
     }
     
     refresh(): void {
-        // 触发视图更新
-        this._onDidChangeTreeData.fire();
-        
-        // 清空现有项
+        this.analysis = this.logsAnalyzer.getAnalysis();
         this.rootItems = [];
-        
-        // 从API服务器获取最新分析结果
-        this.apiClient.getAnalysis().then(analysis => {
-            this.analysis = analysis;
-            if (analysis) {
-                this.buildTree();
-            }
-        });
+        this.buildTree();
+        this._onDidChangeTreeData.fire();
     }
     
     getTreeItem(element: AnalysisItem): vscode.TreeItem {
